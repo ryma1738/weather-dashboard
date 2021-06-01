@@ -1,5 +1,5 @@
 //Main Java Script file for Weather Dashboard Project
-
+var clickedFromHistory = false;
 var searchHistory = [];
 var iconWeatherClasses = ["bi-cloud-lightning-rain", "bi-cloud-lightning", "bi-lightning", "bi-cloud-drizzle", 
 "bi-cloud-rain", "bi-cloud-rain-heavy", "bi-cloud-snow", "bi-cloud-sleet", "bi-cloud-fog", "bi-cloud-fog2", "bi-cloud-haze", 
@@ -38,8 +38,7 @@ function getGeolocation() {
         if (responce.ok) {
             responce.json().then(function(data) {
                 //do stuff with the data
-                console.log(data)
-                if (data.length > 0) {
+                if (data.length > 0) { 
                     var lat = data[0].lat;
                     var lon = data[0].lon;
                     getWeather(lat, lon, search);
@@ -132,6 +131,17 @@ function searchClicked(event) {
      }
 }
 
+function historyClicked(event) {
+    event.preventDefault();
+    var targetEl = event.target;
+    if (targetEl) {
+        $("#city").val(targetEl.value);
+        getGeolocation();
+        clickedFromHistory = true;
+    }
+    console.log("worked")
+}
+
 function getIcon(weather, index) {
     //Based of the weather data, sets a value for the weather icon to be displayed
     $("#icon-" + index).removeClass(iconWeatherClasses);
@@ -150,7 +160,7 @@ function displayWeather(weather) {
     if ($("#display-weather").hasClass("d-none")) {
         $("#display-weather").removeClass("d-none");
     }
-    
+
     $("#uv-index").text(weather.uvIndex);
     $("#uv-index").removeClass("bg-success bg-warning bg-orange bg-danger bg-extreme text-white text-black");
     if (weather.uvIndex >= 0 && weather.uvIndex < 3) {
@@ -168,13 +178,17 @@ function displayWeather(weather) {
     else if (weather.uvIndex >= 11) {
         $("#uv-index").addClass("bg-extreme text-white");
     }
-    $("#city-displayed").text(weather.city + ":");
 
     for (var i = 0; i < weather.tempLow.length; i++) {
         $("#temp-" + i + "-low").text(Math.round(weather.tempLow[i]) + "° F");
     }
     for (var i = 0; i < weather.temp.length; i++) {
-        $("#weather-date-" + i).text(weather.date[i]);
+        if (i === 0) {
+            $("#weather-date-" + i).text(weather.city + ": " + weather.date[i]);
+        }
+        else {
+            $("#weather-date-" + i).text(weather.date[i] + " ");
+        }
         $("#temp-" + i).text(Math.round(weather.temp[i]) + "° F");
         $("#wind-" + i).text(weather.wind[i] + " MPH");
         $("#hum-" + i).text(weather.humidity[i]);
@@ -184,16 +198,21 @@ function displayWeather(weather) {
 
 function saveHistory(city){
     //Saves the search history
-    searchHistory.splice(0, 0, city);
-    if (searchHistory[0] === searchHistory[1]){
-        searchHistory.shift();
-    }
-    if (searchHistory.length > 10) {
-        searchHistory.pop();
-    }
+    if (!clickedFromHistory) {
+        searchHistory.splice(0, 0, city);
+        if (searchHistory[0] === searchHistory[1]){
+            searchHistory.shift();
+        }
+        if (searchHistory.length > 10) {
+            searchHistory.pop();
+        }
 
-    localStorage.setItem("searchHistoryCity", JSON.stringify(searchHistory));
-    displayHistory();
+        localStorage.setItem("searchHistoryCity", JSON.stringify(searchHistory));
+        displayHistory();
+    }
+    else {
+        clickedFromHistory = false;
+    }
 }
 
 function loadHistory() {
@@ -215,7 +234,7 @@ function displayHistory() {
         $("#search-history").empty();
         for (var i = 0; i < searchHistory.length; i++) {
             mobileHistoryCounter++;
-            if (mobileHistoryCounter > 2){ 
+            if (mobileHistoryCounter > 3){ 
                 $("#search-history")
                 .append("<button class='bg-secondary bg-gradient col-12 mt-2 p-1 text-center rounded text-white d-none d-md-block'"
                 + "id='history-btn' value='" + searchHistory[i] + "'>" + searchHistory[i] + "</div");
@@ -232,3 +251,4 @@ function displayHistory() {
 //Inital functions and event listeners
 loadHistory();
 $("#city-form").on("submit", searchClicked);
+$("#search-history").on("click", historyClicked);
