@@ -1,5 +1,6 @@
 var mobileHistoryCounter = 0; 
 //if the length of the search history is over 2 set class d-sm-none, and if history is over 10 delete the 11th
+var searchHistory = [];
 var iconWeatherClasses = ["bi-cloud-lightning-rain", "bi-cloud-lightning", "bi-lightning", "bi-cloud-drizzle", 
 "bi-cloud-rain", "bi-cloud-rain-heavy", "bi-cloud-snow", "bi-cloud-sleet", "bi-cloud-fog", "bi-cloud-fog2", "bi-cloud-haze", 
 "bi-cloud-haze-1", "bi-cloud-haze-fill", "bi-tornado", "bi-brightness-high", "bi-cloud-sun", "bi-cloud", "bi-clouds"]
@@ -19,7 +20,6 @@ var iconWeatherIndex = {
     801: "bi-cloud-sun",802: "bi-cloud",803: "bi-clouds",804: "bi-clouds",
 }
 
-
 function getGeolocation() {
     //takes the city name and gets the weather values for it. It then sends it to the
     var search = $("#city").val();
@@ -32,17 +32,24 @@ function getGeolocation() {
         if (responce.ok) {
             responce.json().then(function(data) {
                 //do stuff with the data
-                var lat = data[0].lat;
-                var lon = data[0].lon;
-                getWeather(lat, lon, search);
-            });
+                console.log(data)
+                if (data.length > 0) {
+                    var lat = data[0].lat;
+                    var lon = data[0].lon;
+                    getWeather(lat, lon, search);
+                }     
+                else if (data.length === 0) {
+                    alert("City Not found. Please try again.");
+                }
+                else {
+                    alert("Unknown Error Occured")
+                }
+            });     
         }
         else {
-            alert("City Not found or server is down. Please try again.");
+            alert("Their was an unexpected network error. Please try again.")
         }
-        
     });
-
 }
 
 function getWeather(lat, lon, city) {
@@ -63,11 +70,12 @@ function getWeather(lat, lon, city) {
                 var uvIndex = null;
                 var icon = [];
                 var current = true;
+                var today = moment();
 
                 for (var i = 0; i < 6; i++) {
                     if (current) {
                         current = false;
-                        date.push(moment().format("MM,DD,YYYY"));
+                        date.push(today.format("L"));
                         temp.push(data.current.temp);
                         wind.push(data.current.wind_speed);
                         humidity.push(data.current.humidity);
@@ -76,7 +84,7 @@ function getWeather(lat, lon, city) {
                         i--;
                     }
                     else {
-                        date.push(moment().format("MM,DD,YYYY").add((i + 1), "days"));
+                        date.push(today.add(1, "days").format("L"));
                         temp.push(data.daily[i].temp.max);
                         tempLow.push(data.daily[i].temp.min)
                         wind.push(data.daily[i].wind_speed);
@@ -88,12 +96,14 @@ function getWeather(lat, lon, city) {
                 weather = {
                     date: date,
                     temp: temp,
+                    tempLow: tempLow,
                     wind: wind,
                     humidity: humidity,
                     uvIndex: uvIndex,
                     icon: icon,
                     city: city
                 };
+                saveHistory(city);
                 displayWeather(weather);
             });
         }
@@ -119,23 +129,14 @@ function searchClicked(event) {
 function getIcon(weather, index) {
     //Based of the weather data, sets a value for the weather icon to be displayed
     $("#icon-" + index).removeClass(iconWeatherClasses);
-    if (index === 0) {
-        var baseClasses = "icon-lg bi ";
-    }
-    else {
-        var baseClasses = "icon-sm bi ";
-    }
+
     for (var i = 0; i < iconWeatherClasses.length; i++) {
         if ($("#icon-" + index).hasClass(iconWeatherClasses[i])) {
             $("#icon-" + index).removeClass(iconWeatherClasses[i]);
         }
     }
-    var classIndex = weather.icon;
-    $("icon-" + index).addClass(iconWeatherIndex.classIndex);
-    
 
-
-    
+    $("#icon-" + index).addClass(iconWeatherIndex[weather.icon[index]]);
 }
 
 function displayWeather(weather) {
@@ -148,28 +149,65 @@ function displayWeather(weather) {
     $("#city-displayed").text(weather.city + ":");
 
     for (var i = 0; i < weather.tempLow.length; i++) {
-        $("#temp-" + i + "-low").text(weather.tempLow[i]);
+        $("#temp-" + i + "-low").text(Math.round(weather.tempLow[i]) + "° F");
     }
     for (var i = 0; i < weather.temp.length; i++) {
-        $("#temp-" + i).text(weather.temp[i]);
+        $("#weather-date-" + i).text(weather.date[i]);
+        $("#temp-" + i).text(Math.round(weather.temp[i]) + "° F");
         $("#wind-" + i).text(weather.wind[i]);
         $("#hum-" + i).text(weather.humidity[i]);
-        $("#icon-" + i).addClass(getIcon(weather, i));
+        getIcon(weather, i);
     }
 }
 
-function saveHistory(){
+function saveHistory(city){
     //Saves the search history
+    searchHistory.splice(0, 0, city);
+    if (searchHistory[0] === searchHistory[1]){
+        searchHistory.shift();
+    }
+    if (mobileHistoryCounter > 10) {
+        searchHistory.pop();
+    }
+    localStorage.setItem("searchHistoryCity", JSON.stringify(searchHistory));
+    displayHistory();
 }
 
 function loadHistory() {
     //Loads the history and fills the values
+    //localStorage.removeItem("searchHistoryCity"); //use this to delete search history
+    searchHistory = localStorage.getItem("searchHistoryCity");
+    if (searchHistory === null) {
+        searchHistory = [];
+        return;
+    }
+        searchHistory = JSON.parse(searchHistory);
+        displayHistory();
+        console.log(searchHistory);
+}
+
+function displayHistory() {
+    //Displays the history on the page
+    mobileHistoryCounter = 0;
+    if (searchHistory) {
+        $("#search-history").empty();
+        for (var i = 0; i < searchHistory.length; i++) {
+            mobileHistoryCounter++;
+            if (mobileHistoryCounter > 2){ 
+                $("#search-history")
+                .append("<button class='bg-secondary bg-gradient col-12 mt-2 p-1 text-center rounded text-white d-none d-md-block'"
+                + "id='history-btn' value='" + searchHistory[i] + "'>" + searchHistory[i] + "</div");
+            }
+            else {
+                $("#search-history")
+                .append("<button class='bg-secondary bg-gradient col-12 mt-2 p-1 text-center rounded text-white'"
+                + "id='history-btn' value='" + searchHistory[i] + "'>" + searchHistory[i] + "</div");
+            }
+        }
+    }  
 }
 
 
-
 //Inital functions and event listeners
-
+loadHistory();
 $("#city-form").on("submit", searchClicked);
-
-
