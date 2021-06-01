@@ -1,5 +1,5 @@
-var mobileHistoryCounter = 0; 
-//if the length of the search history is over 2 set class d-sm-none, and if history is over 10 delete the 11th
+//Main Java Script file for Weather Dashboard Project
+
 var searchHistory = [];
 var iconWeatherClasses = ["bi-cloud-lightning-rain", "bi-cloud-lightning", "bi-lightning", "bi-cloud-drizzle", 
 "bi-cloud-rain", "bi-cloud-rain-heavy", "bi-cloud-snow", "bi-cloud-sleet", "bi-cloud-fog", "bi-cloud-fog2", "bi-cloud-haze", 
@@ -23,7 +23,13 @@ var iconWeatherIndex = {
 function getGeolocation() {
     //takes the city name and gets the weather values for it. It then sends it to the
     var search = $("#city").val();
-    search = search.trim();
+    $("#city").val("");
+    search = search.trim().toLowerCase().split(" ");
+    for (var i = 0; i < search.length; i++) {
+        search[i] = search[i].charAt(0).toUpperCase() + search[i].substring(1);
+    }
+    search = search.join(" ");
+
     var apiKey = "http://api.openweathermap.org/geo/1.0/direct?q=" + search +  
     "&limit=1&appid=092da386c4cb34ff855fb9f8e6c59a3b";
 
@@ -154,7 +160,7 @@ function displayWeather(weather) {
     for (var i = 0; i < weather.temp.length; i++) {
         $("#weather-date-" + i).text(weather.date[i]);
         $("#temp-" + i).text(Math.round(weather.temp[i]) + "° F");
-        $("#wind-" + i).text(weather.wind[i]);
+        $("#wind-" + i).text(weather.wind[i] + " MPH");
         $("#hum-" + i).text(weather.humidity[i]);
         getIcon(weather, i);
     }
@@ -166,9 +172,10 @@ function saveHistory(city){
     if (searchHistory[0] === searchHistory[1]){
         searchHistory.shift();
     }
-    if (mobileHistoryCounter > 10) {
+    if (searchHistory.length > 10) {
         searchHistory.pop();
     }
+
     localStorage.setItem("searchHistoryCity", JSON.stringify(searchHistory));
     displayHistory();
 }
@@ -183,12 +190,11 @@ function loadHistory() {
     }
         searchHistory = JSON.parse(searchHistory);
         displayHistory();
-        console.log(searchHistory);
 }
 
 function displayHistory() {
     //Displays the history on the page
-    mobileHistoryCounter = 0;
+    var mobileHistoryCounter = 0;
     if (searchHistory) {
         $("#search-history").empty();
         for (var i = 0; i < searchHistory.length; i++) {
@@ -206,7 +212,6 @@ function displayHistory() {
         }
     }  
 }
-
 
 //Inital functions and event listeners
 loadHistory();
