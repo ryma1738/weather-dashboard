@@ -150,8 +150,24 @@ function displayWeather(weather) {
     if ($("#display-weather").hasClass("d-none")) {
         $("#display-weather").removeClass("d-none");
     }
-
+    
     $("#uv-index").text(weather.uvIndex);
+    $("#uv-index").removeClass("bg-success bg-warning bg-orange bg-danger bg-extreme text-white text-black");
+    if (weather.uvIndex >= 0 && weather.uvIndex < 3) {
+        $("#uv-index").addClass("bg-success text-white");
+    }
+    else if (weather.uvIndex >= 3 && weather.uvIndex < 6) {
+        $("#uv-index").addClass("bg-warning text-black");
+    }
+    else if (weather.uvIndex >= 6 && weather.uvIndex < 8) {
+        $("#uv-index").addClass("bg-orange text-black");
+    }
+    else if (weather.uvIndex >= 8 && weather.uvIndex < 11) {
+        $("#uv-index").addClass("bg-danger text-white");
+    }
+    else if (weather.uvIndex >= 11) {
+        $("#uv-index").addClass("bg-extreme text-white");
+    }
     $("#city-displayed").text(weather.city + ":");
 
     for (var i = 0; i < weather.tempLow.length; i++) {

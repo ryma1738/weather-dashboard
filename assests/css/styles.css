@@ -33,6 +33,14 @@ body {
 
  }
 
+ .bg-orange {
+     background-color: coral;
+ }
+
+ .bg-extreme {
+     background-color: purple;
+ }
+
  .five-day {
     background: linear-gradient(45deg, blue 0%, rgb(15, 139, 255), blue 100%);
     color: white;
