@@ -30,7 +30,7 @@ function getGeolocation() {
     }
     search = search.join(" ");
 
-    var apiKey = "http://api.openweathermap.org/geo/1.0/direct?q=" + search +  
+    var apiKey = "https://api.openweathermap.org/geo/1.0/direct?q=" + search +  
     "&limit=1&appid=092da386c4cb34ff855fb9f8e6c59a3b";
 
     fetch(apiKey).then(function(responce) {
